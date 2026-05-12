@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fluencia — Gestor de gastos inteligente</title>
+<meta name="description" content="Controla tus finanzas, categoriza gastos con IA y alcanza tus metas de ahorro con Fluencia." />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f172a;
+    --surface: #f8fafc;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #10b981;
+    --accent-dark: #059669;
+    --border: rgba(15, 23, 42, 0.08);
+    --card: #ffffff;
+    --shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.18);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Nav */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(248, 250, 252, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 0;
+  }
+  .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a { color: var(--muted); font-size: 0.95rem; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .btn {
+    display: inline-block;
+    padding: 0.7rem 1.4rem;
+    border-radius: 0.6rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--bg); color: white;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 25px -10px rgba(15,23,42,0.4); }
+  .btn-accent {
+    background: var(--accent); color: white;
+  }
+  .btn-accent:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: white; }
+
+  /* Hero */
+  .hero { padding: 5rem 0 4rem; }
+  .hero-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+  }
+  .tag {
+    display: inline-block;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-dark);
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+    margin-bottom: 1.25rem;
+  }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p { font-size: 1.15rem; color: var(--muted); margin-bottom: 2rem; max-width: 32rem; }
+  .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  /* Visual card */
+  .visual {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 1.75rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .balance-label { color: var(--muted); font-size: 0.9rem; }
+  .balance { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 0.25rem 0 1.5rem; }
+  .chart {
+    height: 140px;
+    background: linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0));
+    border-radius: 0.75rem;
+    position: relative;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .chart::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .tx { display: flex; justify-content: space-between; padding: 0.7rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+  .tx:first-of-type { border-top: 0; }
+  .tx-name { font-weight: 600; }
+  .tx-cat { color: var(--muted); font-size: 0.8rem; }
+  .tx-amt { font-weight: 700; }
+  .neg { color: #ef4444; }
+  .pos { color: var(--accent-dark); }
+
+  /* Sections */
+  section { padding: 5rem 0; }
+  .section-title { text-align: center; margin-bottom: 3rem; }
+  .section-title h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+  }
+  .section-title p { color: var(--muted); max-width: 36rem; margin: 0 auto; }
+
+  /* Features */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+  }
+  .feature {
+    background: var(--card);
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+  .icon {
+    width: 48px; height: 48px;
+    background: rgba(16,185,129,0.12);
+    color: var(--accent-dark);
+    border-radius: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 700;
+    margin-bottom: 1.25rem;
+  }
+  .feature h3 { font-size: 1.2rem; margin-bottom: 0.5rem; font-weight: 700; }
+  .feature p { color: var(--muted); font-size: 0.95rem; }
+
+  /* Pricing */
+  #precios { background: white; }
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 1000px; margin: 0 auto;
+  }
+  .plan {
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+  .plan.featured {
+    background: var(--bg); color: white; border-color: var(--bg);
+    transform: scale(1.03);
+  }
+  .plan.featured .price-sub, .plan.featured li { color: rgba(255,255,255,0.75); }
+  .plan h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .price { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .price-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .plan ul { list-style: none; margin-bottom: 2rem; flex-grow: 1; }
+  .plan li { padding: 0.5rem 0; font-size: 0.95rem; color: var(--muted); }
+  .plan li::before { content: "✓ "; color: var(--accent); font-weight: 700; }
+
+  /* CTA */
+  .cta-final {
+    background: var(--bg); color: white; text-align: center;
+    border-radius: 1.5rem; padding: 4rem 2rem; margin: 0 1rem;
+  }
+  .cta-final h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: 1rem; letter-spacing: -0.02em; }
+  .cta-final p { color: rgba(255,255,255,0.75); margin-bottom: 2rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+
+  /* Footer */
+  footer {
+    padding: 3rem 0 2rem; border-top: 1px solid var(--border); margin-top: 3rem;
+    color: var(--muted); font-size: 0.9rem;
+  }
+  .footer-grid {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .hero { padding: 3rem 0; }
+    .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .features-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .plan.featured { transform: none; }
+    .nav-links { display: none; }
+    section { padding: 3.5rem 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <nav>
+      <div class="brand">Fluen<span>cia</span></div>
+      <div class="nav-links">
+        <a href="#features">Funciones</a>
+        <a href="#precios">Precios</a>
+        <a href="#contacto">Contacto</a>
+      </div>
+      <a href="#precios" class="btn btn-primary">Empezar gratis</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="tag">● Control inteligente</span>
+        <h1>Tu dinero, <em>sin misterios.</em></h1>
+        <p>Fluencia categoriza tus gastos con IA, conecta todas tus cuentas y te muestra exactamente a dónde va cada euro. Toma decisiones financieras con claridad.</p>
+        <div class="hero-ctas">
+          <a href="#precios" class="btn btn-accent">Crear cuenta gratis</a>
+          <a href="#features" class="btn btn-ghost">Ver cómo funciona</a>
+        </div>
+      </div>
+      <div class="visual" aria-hidden="true">
+        <div class="balance-label">Balance del mes</div>
+        <div class="balance">€12.450,00</div>
+        <div class="chart"></div>
+        <div class="tx"><div><div class="tx-name">Mercadona</div><div class="tx-cat">Alimentación</div></div><div class="tx-amt neg">-€48,20</div></div>
+        <div class="tx"><div><div class="tx-name">Nómina</div><div class="tx-cat">Ingresos</div></div><div class="tx-amt pos">+€2.800,00</div></div>
+        <div class="tx"><div><div class="tx-name">Netflix</div><div class="tx-cat">Suscripciones</div></div><div class="tx-amt neg">-€12,99</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>Todo lo que necesitas para gestionar tu dinero</h2>
+        <p>Diseñado para personas y equipos que quieren entender sus finanzas sin hojas de cálculo.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="icon">AI</div>
+          <h3>Categorización con IA</h3>
+          <p>Cada transacción se clasifica automáticamente. Olvídate de etiquetar gastos a mano.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🔒</div>
+          <h3>Seguridad bancaria</h3>
+          <p>Cifrado de extremo a extremo y conexiones de solo lectura con tus bancos.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🎯</div>
+          <h3>Metas de ahorro</h3>
+          <p>Define objetivos y recibe alertas cuando estés a punto de pasarte del presupuesto.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="precios">
+    <div class="container">
+      <div class="section-title">
+        <h2>Planes simples y transparentes</h2>
+        <p>Empieza gratis. Sin tarjeta. Cancela cuando quieras.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="plan">
+          <h3>Personal</h3>
+          <div class="price">€0</div>
+          <div class="price-sub">/mes</div>
+          <ul>
+            <li>Hasta 2 cuentas conectadas</li>
+            <li>Categorización automática</li>
+            <li>Reportes mensuales</li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Empezar gratis</a>
+        </div>
+        <div class="plan featured">
+          <h3>Pro</h3>
+          <div class="price">€9</div>
+          <div class="price-sub">/mes</div>
+          <ul>
+            <li>Cuentas ilimitadas</li>
+            <li>Metas de ahorro y alertas</li>
+            <li>Exportación CSV / PDF</li>
+            <li>Soporte prioritario</li>
+          </ul>
+          <a href="#" class="btn btn-accent">Probar 14 días</a>
+        </div>
+        <div class="plan">
+          <h3>Empresas</h3>
+          <div class="price">€29</div>
+          <div class="price-sub">/mes por equipo</div>
+          <ul>
+            <li>Multi-usuario</li>
+            <li>Integraciones contables</li>
+            <li>Roles y permisos</li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Contactar ventas</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cta-final">
+      <h2>Más de 50.000 personas ya controlan su dinero con Fluencia</h2>
+      <p>Únete hoy y descubre cuánto puedes ahorrar el próximo mes.</p>
+      <a href="#" class="btn btn-accent">Crear mi cuenta gratis</a>
+    </div>
+  </section>
+</main>
+
+<footer id="contacto">
+  <div class="container footer-grid">
+    <div>© 2026 Fluencia. Todos los derechos reservados.</div>
+    <div class="footer-links">
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="#">Contacto</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
