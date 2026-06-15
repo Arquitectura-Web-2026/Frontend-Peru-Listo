@@ -31,24 +31,47 @@ export class GastoService {
   }
 
   /** Create a new expense and prepend to the signal list. */
+  /*
   createGasto(dto: Partial<GastoDTO>): Observable<GastoDTO> {
     return this.http.post<GastoDTO>('/API/registrar_gasto', dto).pipe(
       tap(created => {
         this.gastos.update(list => [created, ...list]);
       })
     );
+  }*/
+
+  createGasto(dto: Partial<GastoDTO>): Observable<GastoDTO> {
+    return this.http.post<GastoDTO>('/API/registrar_gasto', dto).pipe(
+      tap(created => {
+        // Forzamos a que el objeto mantenga la propiedad plana 'categoriaId'
+        const gastoFormateado: any = {
+          ...created,
+          categoriaId: (created as any).categoriaId || (created as any).categoria?.id
+        };
+        this.gastos.update(list => [gastoFormateado, ...list]);
+      })
+    );
   }
+
+
+
 
   /** Update an existing expense and replace in the signal list. */
   updateGasto(id: number, dto: Partial<GastoDTO>): Observable<GastoDTO> {
     return this.http.put<GastoDTO>(`/API/editar_gasto/${id}`, dto).pipe(
       tap(updated => {
+        const gastoFormateado: any = {
+          ...updated,
+          // Mapea el ID plano provisto por el DTO si el backend retorna la entidad vacía o diferente
+          categoriaId: Number(updated?.categoriaId || (updated as any).categoria?.id || dto.categoriaId)
+        };
         this.gastos.update(list =>
-          list.map(g => g.id === id ? updated : g)
+          list.map(g => g.id == id ? gastoFormateado : g)
         );
       })
     );
   }
+
 
   /** Delete an expense and remove from the signal list. */
   deleteGasto(id: number): Observable<void> {

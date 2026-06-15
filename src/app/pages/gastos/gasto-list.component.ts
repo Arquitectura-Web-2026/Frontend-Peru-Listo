@@ -71,7 +71,10 @@ import { AuthService } from '../../services/auth.service';
           </ng-container>
           <ng-container matColumnDef="categoria">
             <th mat-header-cell *matHeaderCellDef>Categoría</th>
-            <td mat-cell *matCellDef="let row">{{ row.categoriaNombre || '—' }}</td>
+            <!--<td mat-cell *matCellDef="let row">{{ row.categoriaNombre || '—' }}</td>-->
+            <!--<td mat-cell *matCellDef="let row">{{ row.categoria?.nombre || '—' }}</td>-->
+            <!--<td mat-cell *matCellDef="let row">{{ obtenerNombreCategoria(row.categoriaId) }}</td>-->
+            <td mat-cell *matCellDef="let row">{{ obtenerNombreCategoria(row) }}</td>
           </ng-container>
           <ng-container matColumnDef="descripcion">
             <th mat-header-cell *matHeaderCellDef>Descripción</th>
@@ -161,6 +164,28 @@ export class GastoListComponent implements OnInit {
       this.gastoService.getGastos(userId);
       this.categoriaService.getCategorias(userId);
     }
+  }
+  // PARA PODER VER LA CATEGORIA LA MOMENTO DE CREARLA EN GASTOS
+ /*obtenerNombreCategoria(categoriaId: number | undefined): string {
+    if (!categoriaId) return '—';
+
+    const lista = this.categoriaService.categorias();
+
+    const encontrada = lista.find(c => c.id === categoriaId);
+    return encontrada ? encontrada.nombre : '—';
+  }*/
+
+  obtenerNombreCategoria(row: any): string {
+    if (!row) return '—';
+
+    // Busca el ID ya sea plano o anidado en el objeto
+    const categoriaId = row.categoriaId || row.categoria?.id;
+
+    if (!categoriaId) return '—';
+
+    const lista = this.categoriaService.categorias();
+    const encontrada = lista.find(c => c.id === categoriaId);
+    return encontrada ? encontrada.nombre : '—';
   }
 
   confirmDelete(id: number): void {

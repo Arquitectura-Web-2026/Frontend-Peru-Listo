@@ -156,12 +156,27 @@ export class GastoFormComponent implements OnInit {
       this.categoriaService.getCategorias(userId);
     }
 
-    // Check if we're in edit mode
+    // Comprobación y carga de datos en Modo Edición
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.isEditMode = true;
       this.editId = Number(idParam);
-      // In a real app, we would load the expense data here
+
+      // Buscamos el gasto actual dentro del Signal del servicio para poblar el formulario
+      const gastoAEditar = this.gastoService.gastos().find(g => g.id === this.editId);
+      if (gastoAEditar) {
+        // Adaptamos la fecha por si viene como String desde el backend
+        const fechaParseada = typeof gastoAEditar.fechagasto === 'string'
+          ? new Date(gastoAEditar.fechagasto + 'T00:00:00')
+          : gastoAEditar.fechagasto;
+
+        this.gastoForm.patchValue({
+          categoriaId: gastoAEditar.categoriaId || (gastoAEditar as any).categoria?.id,
+          descripcion: gastoAEditar.descripcion,
+          monto: gastoAEditar.monto,
+          fechagasto: fechaParseada
+        });
+      }
     }
   }
 
@@ -182,19 +197,30 @@ export class GastoFormComponent implements OnInit {
       ? fechagasto.toISOString().split('T')[0]
       : fechagasto;
 
-    const dto: Partial<GastoDTO> = {
+    // ESTRUCTURA PLANA: Compatible con tus columnas categoria_id y usuario_id en Postgres
+    const dtoPlano: Partial<GastoDTO> = {
       descripcion: formValue.descripcion,
       monto: Number(formValue.monto),
-      categoriaId: Number(formValue.categoriaId),
+      categoriaId: Number(formValue.categoriaId), // Enviamos el ID directo
       fechagasto: fechaStr,
       usuarioId: userId,
     };
 
     if (this.isEditMode && this.editId) {
-      this.gastoService.updateGasto(this.editId, dto).subscribe({
-        next: () => {
+      // MODO EDICIÓN
+      this.gastoService.updateGasto(this.editId, dtoPlano).subscribe({
+        next: (respuestaBackend) => {
           this.submitting.set(false);
-          this.snackBar.open('Gasto actualizado', 'Cerrar', { duration: 3000 });
+          this.snackBar.open('Gasto actualizado con éxito', 'Cerrar', { duration: 3000 });
+
+          // RESPALDO LOCAL: Forzamos la actualización manual en el Signal de la lista
+          this.gastoService.gastos.update(list =>
+            list.map(g => g.id == this.editId
+              ? { ...g, ...dtoPlano }
+              : g
+            )
+          );
+
           this.router.navigate(['/gastos']);
         },
         error: (err) => {
@@ -202,8 +228,10 @@ export class GastoFormComponent implements OnInit {
           this.snackBar.open(err.error?.message || 'Error al actualizar gasto', 'Cerrar', { duration: 5000 });
         }
       });
+
     } else {
-      this.gastoService.createGasto(dto).subscribe({
+      // MODO CREACIÓN
+      this.gastoService.createGasto(dtoPlano).subscribe({
         next: () => {
           this.submitting.set(false);
           this.snackBar.open('Gasto creado exitosamente', 'Cerrar', { duration: 3000 });
@@ -216,4 +244,9 @@ export class GastoFormComponent implements OnInit {
       });
     }
   }
+
+
+
+
+
 }
