@@ -105,7 +105,7 @@ describe('IngresoListComponent', () => {
   describe('error state', () => {
     it('should show error message with retry', () => {
       ingresoService.error.set('Error de conexión');
-      ingresoService.gastos?.set?.([]) ?? ingresoService.ingresos.set([]);
+      ingresoService.ingresos.set([]); // Limpiado: Quitamos la 'g' intrusa y la coalescencia rota
       ingresoService.loading.set(false);
       fixture.detectChanges();
 

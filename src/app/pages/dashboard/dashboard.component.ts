@@ -1,21 +1,14 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { DashboardService } from '../../services/dashboard.service';
 import { AuthService } from '../../services/auth.service';
-import { DashboardResumenDTO, GastosCategoriaDTO, ComparativaMensualDTO } from '../../models/dashboard.models';
-
-/** Column definition for the comparison table. */
-interface ComparativaColumn {
-  key: string;
-  label: string;
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -24,7 +17,6 @@ interface ComparativaColumn {
     DecimalPipe,
     MatCardModule,
     MatTableModule,
-    MatListModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatButtonModule,
@@ -34,7 +26,6 @@ interface ComparativaColumn {
     <div class="dashboard-container">
       <h1>Dashboard</h1>
 
-      <!-- Loading state -->
       @if (dashService.loading()) {
         <div class="loading-container">
           <mat-spinner diameter="48"></mat-spinner>
@@ -42,7 +33,6 @@ interface ComparativaColumn {
         </div>
       }
 
-      <!-- Error state -->
       @if (dashService.error() && !dashService.loading()) {
         <div class="error-container">
           <mat-icon color="warn">error_outline</mat-icon>
@@ -51,7 +41,6 @@ interface ComparativaColumn {
         </div>
       }
 
-      <!-- Empty state -->
       @if (!dashService.loading() && !dashService.error() && !dashService.resumen()) {
         <div class="empty-container">
           <mat-icon>inbox</mat-icon>
@@ -59,9 +48,7 @@ interface ComparativaColumn {
         </div>
       }
 
-      <!-- Data loaded -->
       @if (!dashService.loading() && dashService.resumen()) {
-        <!-- Stat cards row -->
         <div class="stat-cards">
           <mat-card class="stat-card ingresos-card">
             <mat-card-content>
@@ -95,36 +82,38 @@ interface ComparativaColumn {
               <div class="stat-value">
                 {{ dashService.resumen()?.balance ?? 0 | number:'1.2-2' }}
               </div>
-              <div class="stat-label">Balance</div>
+              <div class="stat-label">Equilibrar</div>
             </mat-card-content>
           </mat-card>
         </div>
 
-        <!-- Gastos por Categoría section -->
         <div class="section">
           <h2>Gastos por Categoría</h2>
           @if (dashService.gastosPorCategoria().length === 0) {
             <p class="no-data">Sin datos de categorías</p>
           } @else {
-            <mat-list>
-              @for (cat of dashService.gastosPorCategoria(); track cat.categoriaNombre) {
-                <mat-list-item>
-                  <span matListItemTitle>{{ cat.categoriaNombre }}</span>
-                  <span matListItemLine>
+            <mat-card class="chart-container-card">
+              <mat-card-content style="padding: 16px 24px;">
+                @for (cat of dashService.gastosPorCategoria(); track cat.categoriaNombre) {
+                  <div class="chart-row">
+                    <div class="chart-info">
+                      <span class="category-name">{{ cat.categoriaNombre }}</span>
+                      <span class="category-values">
+                        {{ cat.monto | number:'1.2-2' }} ({{ cat.porcentaje | number:'1.1-1' }}%)
+                      </span>
+                    </div>
                     <mat-progress-bar
                       mode="determinate"
                       [value]="cat.porcentaje"
                       [color]="cat.porcentaje > 80 ? 'warn' : 'primary'">
                     </mat-progress-bar>
-                  </span>
-                  <span matListItemMeta>{{ cat.monto | number:'1.2-2' }} ({{ cat.porcentaje | number:'1.1-1' }}%)</span>
-                </mat-list-item>
-              }
-            </mat-list>
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
           }
         </div>
 
-        <!-- Comparativa Mensual section -->
         <div class="section">
           <h2>Comparativa Mensual</h2>
           @if (dashService.comparativaMensual().length === 0) {
@@ -165,7 +154,7 @@ interface ComparativaColumn {
     h2 {
       font-size: 20px;
       font-weight: 500;
-      margin: 24px 0 12px 0;
+      margin: 24px 0 16px 0;
     }
 
     .stat-cards {
@@ -178,55 +167,34 @@ interface ComparativaColumn {
       border-radius: 8px;
       transition: transform 0.2s;
     }
-    .stat-card:hover {
-      transform: translateY(-2px);
-    }
-    .ingresos-card {
-      border-left: 4px solid #4caf50;
-    }
-    .gastos-card {
-      border-left: 4px solid #f44336;
-    }
-    .balance-card {
-      border-left: 4px solid #2196f3;
-    }
-    .balance-card.positive {
-      border-left: 4px solid #4caf50;
-    }
-    .balance-card.negative {
-      border-left: 4px solid #f44336;
-    }
-    .stat-icon {
-      margin-bottom: 8px;
-    }
-    .stat-icon mat-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .ingresos-card { border-left: 4px solid #4caf50; }
+    .gastos-card { border-left: 4px solid #f44336; }
+    .balance-card { border-left: 4px solid #2196f3; }
+    .balance-card.positive { border-left: 4px solid #4caf50; }
+    .balance-card.negative { border-left: 4px solid #f44336; }
+
+    .stat-icon { margin-bottom: 8px; }
+    .stat-icon mat-icon { font-size: 32px; width: 32px; height: 32px; }
     .ingresos-card .stat-icon mat-icon { color: #4caf50; }
     .gastos-card .stat-icon mat-icon { color: #f44336; }
     .balance-card .stat-icon mat-icon { color: #2196f3; }
-    .stat-value {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .stat-label {
-      font-size: 14px;
-      color: rgba(0,0,0,0.6);
-    }
 
-    .section {
-      margin-bottom: 32px;
-    }
-    .full-width-table {
-      width: 100%;
-    }
-    .no-data {
-      color: rgba(0,0,0,0.5);
-      font-style: italic;
-    }
+    .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .stat-label { font-size: 14px; color: rgba(0,0,0,0.6); }
+
+    .chart-container-card { box-shadow: none !important; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .chart-row { margin-bottom: 20px; }
+    .chart-row:last-child { margin-bottom: 8px; }
+    .chart-info { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+    .category-name { font-weight: 500; color: #1e293b; }
+    .category-values { color: #64748b; font-weight: 500; }
+    mat-progress-bar { height: 10px; border-radius: 4px; }
+
+    .section { margin-bottom: 32px; }
+    .full-width-table { width: 100%; border-radius: 8px; overflow: hidden; }
+    .no-data { color: rgba(0,0,0,0.5); font-style: italic; }
+
     .error-container, .loading-container, .empty-container {
       display: flex;
       flex-direction: column;
@@ -234,17 +202,8 @@ interface ComparativaColumn {
       gap: 16px;
       padding: 48px;
     }
-    .error-container mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-    }
-    .empty-container mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      color: rgba(0,0,0,0.3);
-    }
+    .error-container mat-icon { font-size: 48px; width: 48px; height: 48px; }
+    .empty-container mat-icon { font-size: 48px; width: 48px; height: 48px; color: rgba(0,0,0,0.3); }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -257,49 +216,32 @@ export class DashboardComponent implements OnInit {
     this.loadData();
   }
 
-  /** Load dashboard data for the current month. */
   private loadData(): void {
     const userId = this.authService.currentUserId();
     if (!userId) return;
 
     const now = new Date();
-    const mes = now.getMonth() + 1; // 1-based
+    const mes = now.getMonth() + 1;
     const anio = now.getFullYear();
 
     this.dashService.loading.set(true);
     this.dashService.error.set(null);
 
-    // Parallel fetch: resumen, gastos por categoria, comparativa
-    this.dashService.getResumenMensual(userId, mes, anio).subscribe({
-      error: (err) => {
-        this.dashService.error.set(err.error?.message || 'Error al cargar el resumen mensual');
-        this.dashService.loading.set(false);
-      }
-    });
-
-    this.dashService.getGastosPorCategoria(userId, mes, anio).subscribe({
-      error: () => {
-        if (!this.dashService.error()) {
-          this.dashService.error.set('Error al cargar gastos por categoría');
-        }
-      }
-    });
-
-    this.dashService.getComparativaMensual(userId).subscribe({
+    forkJoin({
+      resumen: this.dashService.getResumenMensual(userId, mes, anio),
+      categorias: this.dashService.getGastosPorCategoria(userId, mes, anio),
+      comparativa: this.dashService.getComparativaMensual(userId)
+    }).subscribe({
       next: () => {
-        if (this.dashService.resumen()) {
-          this.dashService.loading.set(false);
-        }
+        this.dashService.loading.set(false);
       },
-      error: () => {
-        if (!this.dashService.error()) {
-          this.dashService.error.set('Error al cargar comparativa mensual');
-        }
+      error: (err) => {
+        this.dashService.error.set(err.error?.message || 'Error general al cargar los componentes del dashboard');
+        this.dashService.loading.set(false);
       }
     });
   }
 
-  /** Retry loading after an error. */
   retry(): void {
     this.loadData();
   }

@@ -37,13 +37,35 @@ export class MetaAhorroService {
     );
   }
 
+  /** Update an existing savings goal details. */
+  updateMeta(id: number, dto: Partial<MetaAhorroDTO>): Observable<MetaAhorroDTO> {
+    return this.http.put<MetaAhorroDTO>(`/API/editar_meta/${id}`, dto).pipe(
+      tap(updated => {
+        this.metas.update(list =>
+          // Usamos == por seguridad de tipos al comparar con el ID del objeto
+          list.map(m => m.id == id ? { ...m, ...updated } : m)
+        );
+      })
+    );
+  }
+
   /** Add an amount to a savings goal. */
   aportarMeta(metaId: number, monto: number): Observable<MetaAhorroDTO> {
     return this.http.put<MetaAhorroDTO>(`/API/aportar_meta/${metaId}`, { monto }).pipe(
       tap(updated => {
         this.metas.update(list =>
-          list.map(m => m.id === metaId ? updated : m)
+          // Cambiado a == para asegurar que se reemplace el elemento sin importar el tipado estricto
+          list.map(m => m.id == metaId ? updated : m)
         );
+      })
+    );
+  }
+
+  /** Delete a savings goal and remove from the signal list. */
+  deleteMeta(id: number): Observable<void> {
+    return this.http.delete<void>(`/API/eliminar_meta/${id}`).pipe(
+      tap(() => {
+        this.metas.update(list => list.filter(m => m.id !== id));
       })
     );
   }
