@@ -137,6 +137,34 @@ import { AuthService } from '../../services/auth.service';
             </table>
           }
         </div>
+
+        <div class="section">
+          <h2>Progreso de Metas de Ahorro</h2>
+          @if (dashService.progresoMetas().length === 0) {
+            <p class="no-data">Sin metas de ahorro definidas</p>
+          } @else {
+            <mat-card class="chart-container-card">
+              <mat-card-content style="padding: 16px 24px;">
+                @for (meta of dashService.progresoMetas(); track meta.metaId) {
+                  <div class="chart-row">
+                    <div class="chart-info">
+                      <span class="category-name">{{ meta.nombre }}</span>
+                      <span class="category-values">
+                        {{ meta.porcentaje | number:'1.1-1' }}%
+                        (S/ {{ meta.montoActual | number:'1.2-2' }} de S/ {{ meta.montoObjetivo | number:'1.2-2' }})
+                      </span>
+                    </div>
+                    <mat-progress-bar
+                      mode="determinate"
+                      [value]="meta.porcentaje"
+                      [color]="meta.porcentaje >= 100 ? 'accent' : 'primary'">
+                    </mat-progress-bar>
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
       }
     </div>
   `,
@@ -230,7 +258,8 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       resumen: this.dashService.getResumenMensual(userId, mes, anio),
       categorias: this.dashService.getGastosPorCategoria(userId, mes, anio),
-      comparativa: this.dashService.getComparativaMensual(userId)
+      comparativa: this.dashService.getComparativaMensual(userId),
+      metas: this.dashService.getProgresoMetas(userId),
     }).subscribe({
       next: () => {
         this.dashService.loading.set(false);

@@ -7,8 +7,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, ActivatedRoute } from '@angular/router';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { CategoriaDTO } from '../../models/gasto.models';
+import { CategoriaFormDialogComponent } from '../../shared/dialogs/categoria-form-dialog.component';
 
 describe('GastoFormComponent', () => {
   let component: GastoFormComponent;
@@ -142,6 +144,27 @@ describe('GastoFormComponent', () => {
       const createSpy = spyOn(gastoService, 'createGasto');
       component.onSubmit();
       expect(createSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('quick-add category button', () => {
+    it('should open CategoriaFormDialogComponent when "+" button is clicked', () => {
+      // Get the MatDialog service from the injector
+      const dialog = TestBed.inject(MatDialog);
+      const dialogSpy = spyOn(dialog, 'open').and.returnValue({
+        afterClosed: () => of(null),
+      } as any);
+
+      // Find and click the "+" button next to the categoria select
+      const compiled = fixture.nativeElement as HTMLElement;
+      const addButton = compiled.querySelector('[data-testid="quick-add-categoria"]') as HTMLButtonElement;
+      expect(addButton).toBeTruthy();
+      addButton.click();
+
+      expect(dialogSpy).toHaveBeenCalledWith(
+        CategoriaFormDialogComponent,
+        { width: '400px', data: { usuarioId: 1 } }
+      );
     });
   });
 });

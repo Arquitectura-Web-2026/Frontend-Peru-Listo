@@ -43,4 +43,14 @@ export class CategoriaService {
       })
     );
   }
+
+  /** Delete a user-created category and remove from the signal list. */
+  deleteCategoria(id: number, usuarioId: number): Observable<{ message: string }> {
+    const params = new HttpParams().set('usuarioId', String(usuarioId));
+    return this.http.delete<{ message: string }>(`/API/eliminar_categoria/${id}`, { params }).pipe(
+      tap(() => {
+        this.categorias.update(list => list.filter(c => c.id !== id));
+      })
+    );
+  }
 }

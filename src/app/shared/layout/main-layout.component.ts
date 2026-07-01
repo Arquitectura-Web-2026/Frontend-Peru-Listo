@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -39,7 +39,7 @@ import { NAV_ITEMS } from './nav-items';
         </div>
 
         <mat-nav-list>
-          @for (item of navItems; track item.route) {
+          @for (item of navItems(); track item.route) {
             <a mat-list-item
                [routerLink]="[item.route]"
                routerLinkActive="active-link"
@@ -191,7 +191,9 @@ export class MainLayoutComponent {
   private router = inject(Router);
 
   isCollapsed = signal<boolean>(false);
-  navItems = NAV_ITEMS;
+  navItems = computed(() =>
+    NAV_ITEMS.filter(item => !item.requiresAdmin || this.authService.isAdmin())
+  );
 
   toggleSidenav(): void {
     this.isCollapsed.update(val => !val);

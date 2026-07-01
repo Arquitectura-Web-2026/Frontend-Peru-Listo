@@ -11,11 +11,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
 import { GastoService } from '../../services/gasto.service';
 import { CategoriaService } from '../../services/categoria.service';
 import { AuthService } from '../../services/auth.service';
 import { GastoDTO } from '../../models/gasto.models';
+import { CategoriaFormDialogComponent } from '../../shared/dialogs/categoria-form-dialog.component';
 
 @Component({
   selector: 'app-gasto-form',
@@ -33,6 +35,7 @@ import { GastoDTO } from '../../models/gasto.models';
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   template: `
     <div class="form-container">
@@ -43,17 +46,26 @@ import { GastoDTO } from '../../models/gasto.models';
 
         <mat-card-content>
           <form [formGroup]="gastoForm" (ngSubmit)="onSubmit()">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Categoría</mat-label>
-              <mat-select formControlName="categoriaId">
-                @for (cat of categoriaService.categorias(); track cat.id) {
-                  <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+            <div class="categoria-row">
+              <mat-form-field appearance="outline" class="categoria-select">
+                <mat-label>Categoría</mat-label>
+                <mat-select formControlName="categoriaId">
+                  @for (cat of categoriaService.categorias(); track cat.id) {
+                    <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+                  }
+                </mat-select>
+                @if (gastoForm.get('categoriaId')?.hasError('required') && gastoForm.get('categoriaId')?.touched) {
+                  <mat-error>La categoría es requerida</mat-error>
                 }
-              </mat-select>
-              @if (gastoForm.get('categoriaId')?.hasError('required') && gastoForm.get('categoriaId')?.touched) {
-                <mat-error>La categoría es requerida</mat-error>
-              }
-            </mat-form-field>
+              </mat-form-field>
+              <button mat-icon-button type="button"
+                      data-testid="quick-add-categoria"
+                      class="quick-add-btn"
+                      color="primary"
+                      (click)="openQuickAddCategoria()">
+                <mat-icon>add_circle</mat-icon>
+              </button>
+            </div>
 
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Descripción</mat-label>
@@ -119,6 +131,19 @@ import { GastoDTO } from '../../models/gasto.models';
       width: 100%;
       margin-bottom: 12px;
     }
+    .categoria-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .categoria-select {
+      flex: 1;
+    }
+    .quick-add-btn {
+      flex-shrink: 0;
+      margin-bottom: 20px;
+    }
     .form-actions {
       display: flex;
       justify-content: flex-end;
@@ -138,6 +163,7 @@ export class GastoFormComponent implements OnInit {
   protected router = inject(Router);
   private route = inject(ActivatedRoute);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   submitting = signal(false);
   isEditMode = false;
@@ -243,6 +269,16 @@ export class GastoFormComponent implements OnInit {
         }
       });
     }
+  }
+
+  openQuickAddCategoria(): void {
+    const userId = this.authService.currentUserId();
+    if (!userId) return;
+
+    this.dialog.open(CategoriaFormDialogComponent, {
+      width: '400px',
+      data: { usuarioId: userId },
+    });
   }
 
 

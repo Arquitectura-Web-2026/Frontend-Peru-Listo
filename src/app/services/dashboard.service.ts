@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, finalize, of, tap } from 'rxjs';
 import { DashboardResumenDTO, GastosCategoriaDTO, ComparativaMensualDTO } from '../models/dashboard.models';
+import { ProgresoMetaDTO } from '../models/meta.models';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -11,6 +12,7 @@ export class DashboardService {
   readonly resumen = signal<DashboardResumenDTO | null>(null);
   readonly gastosPorCategoria = signal<GastosCategoriaDTO[]>([]);
   readonly comparativaMensual = signal<ComparativaMensualDTO[]>([]);
+  readonly progresoMetas = signal<ProgresoMetaDTO[]>([]);
 
   /** Loading and error state signals. */
   readonly loading = signal(false);
@@ -50,6 +52,14 @@ export class DashboardService {
 
     return this.http.get<ComparativaMensualDTO[]>(`${this.base}/comparativa_mensual`, { params }).pipe(
       tap(data => this.comparativaMensual.set(data))
+    );
+  }
+
+  /** Fetch savings goals progress. */
+  getProgresoMetas(usuarioId: number): Observable<ProgresoMetaDTO[]> {
+    const params = new HttpParams().set('usuarioId', String(usuarioId));
+    return this.http.get<ProgresoMetaDTO[]>(`${this.base}/progreso_metas`, { params }).pipe(
+      tap(data => this.progresoMetas.set(data))
     );
   }
 

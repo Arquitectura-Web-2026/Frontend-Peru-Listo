@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe, CommonModule } from '@angular/common';
+import { RouterModule, Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +17,7 @@ import { AuthService } from '../../services/auth.service';
     CommonModule,
     DecimalPipe,
     DatePipe,
+    RouterModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,
@@ -78,6 +80,9 @@ import { AuthService } from '../../services/auth.service';
           <ng-container matColumnDef="acciones">
             <th mat-header-cell *matHeaderCellDef>Acciones</th>
             <td mat-cell *matCellDef="let row">
+              <button mat-icon-button color="primary" (click)="router.navigate(['/deudas', row.id, 'editar'])">
+                <mat-icon>edit</mat-icon>
+              </button>
               @if (row.estado !== 'PAGADA') {
                 <button mat-icon-button color="primary" (click)="marcarPagada(row.id!)" title="Marcar como pagada">
                   <mat-icon>check_circle</mat-icon>
@@ -92,6 +97,10 @@ import { AuthService } from '../../services/auth.service';
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
       }
+
+      <button mat-fab color="primary" class="fab" routerLink="/deudas/nuevo">
+        <mat-icon>add</mat-icon>
+      </button>
     </div>
   `,
   styles: [`
@@ -133,12 +142,19 @@ import { AuthService } from '../../services/auth.service';
       background-color: #ffebee !important;
       color: #c62828 !important;
     }
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+    }
   `]
 })
 export class DeudaListComponent implements OnInit {
   protected deudaService = inject(DeudaService);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
+  protected router = inject(Router);
 
   readonly displayedColumns: string[] = ['acreedor', 'monto', 'fechaLimite', 'estado', 'acciones'];
 

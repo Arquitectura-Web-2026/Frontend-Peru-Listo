@@ -107,4 +107,65 @@ describe('CategoriaService', () => {
       req.flush({ message: 'Datos inválidos' }, { status: 400, statusText: 'Bad Request' });
     });
   });
+
+  describe('deleteCategoria', () => {
+    beforeEach(() => {
+      // Pre-populate signal so removal is visible
+      service.categorias.set([...mockCategorias]);
+    });
+
+    it('should call DELETE /API/eliminar_categoria/{id}?usuarioId=X and remove from signal on success', () => {
+      service.deleteCategoria(2, 1).subscribe(response => {
+        expect(response).toEqual({ message: 'Categoría eliminada' });
+      });
+
+      const req = httpMock.expectOne(r =>
+        r.url === '/API/eliminar_categoria/2' &&
+        r.params.get('usuarioId') === '1'
+      );
+      expect(req.request.method).toBe('DELETE');
+      req.flush({ message: 'Categoría eliminada' });
+
+      // Verify the signal was updated — item with id=2 removed
+      expect(service.categorias().length).toBe(2);
+      expect(service.categorias().find(c => c.id === 2)).toBeUndefined();
+      // Verify id=1 and id=3 still exist
+      expect(service.categorias().find(c => c.id === 1)?.nombre).toBe('Alimentación');
+      expect(service.categorias().find(c => c.id === 3)?.nombre).toBe('Salario');
+    });
+
+    it('should propagate backend error message on 4xx failure', () => {
+      service.deleteCategoria(2, 1).subscribe({
+        error: (err) => {
+          expect(err.error.message).toBe('La categoría tiene gastos asociados');
+        }
+      });
+
+      const req = httpMock.expectOne('/API/eliminar_categoria/2?usuarioId=1');
+      req.flush(
+        { message: 'La categoría tiene gastos asociados' },
+        { status: 400, statusText: 'Bad Request' }
+      );
+
+      // Signal should NOT change on error
+      expect(service.categorias().length).toBe(3);
+    });
+
+    it('should propagate error on non-existent id (404)', () => {
+      service.deleteCategoria(999, 1).subscribe({
+        error: (err) => {
+          expect(err.status).toBe(404);
+        }
+      });
+
+      const req = httpMock.expectOne('/API/eliminar_categoria/999?usuarioId=1');
+      req.flush(
+        { message: 'Categoría no encontrada' },
+        { status: 404, statusText: 'Not Found' }
+      );
+
+      // Signal should NOT change on error
+      expect(service.categorias().length).toBe(3);
+    });
+  });
 });

@@ -88,16 +88,19 @@ describe('PresupuestoService', () => {
   });
 
   describe('updatePresupuesto', () => {
-    it('should call PUT /API/editar_presupuesto/{id} and update signal', () => {
+    it('should call PUT /API/editar_presupuesto/{id}?monto=X with query param and update signal', () => {
       service.getPresupuestos(1, 6, 2026);
       const listReq = httpMock.expectOne('/API/listar_presupuestos?usuarioId=1&mes=6&anio=2026');
       listReq.flush([...mockPresupuestos]);
 
-      service.updatePresupuesto(1, { montoLimite: 1200 }).subscribe();
+      service.updatePresupuesto(1, 1200).subscribe();
 
-      const req = httpMock.expectOne('/API/editar_presupuesto/1');
+      const req = httpMock.expectOne(r =>
+        r.url === '/API/editar_presupuesto/1' &&
+        r.params.get('monto') === '1200'
+      );
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ montoLimite: 1200 });
+      expect(req.request.body).toBeNull();
       req.flush({ id: 1, mes: 6, anio: 2026, montoLimite: 1200, usuarioId: 1, categoriaId: 1 });
 
       expect(service.presupuestos()[0].montoLimite).toBe(1200);

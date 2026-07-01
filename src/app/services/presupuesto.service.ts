@@ -40,8 +40,9 @@ export class PresupuestoService {
   }
 
   /** Update budget limit. */
-  updatePresupuesto(id: number, dto: Partial<PresupuestoDTO>): Observable<PresupuestoDTO> {
-    return this.http.put<PresupuestoDTO>(`/API/editar_presupuesto/${id}`, dto).pipe(
+  updatePresupuesto(id: number, monto: number): Observable<PresupuestoDTO> {
+    const params = new HttpParams().set('monto', String(monto));
+    return this.http.put<PresupuestoDTO>(`/API/editar_presupuesto/${id}`, null, { params }).pipe(
       tap(updated => {
         this.presupuestos.update(list =>
           list.map(p => p.id === id ? updated : p)
