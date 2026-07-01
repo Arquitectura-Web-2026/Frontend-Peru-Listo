@@ -51,7 +51,8 @@ export class MetaAhorroService {
 
   /** Add an amount to a savings goal. */
   aportarMeta(metaId: number, monto: number): Observable<MetaAhorroDTO> {
-    return this.http.put<MetaAhorroDTO>(`/API/aportar_meta/${metaId}`, { monto }).pipe(
+    const params = new HttpParams().set('monto', String(monto));
+    return this.http.put<MetaAhorroDTO>(`/API/aportar_meta/${metaId}`, null, { params }).pipe(
       tap(updated => {
         this.metas.update(list =>
           // Cambiado a == para asegurar que se reemplace el elemento sin importar el tipado estricto

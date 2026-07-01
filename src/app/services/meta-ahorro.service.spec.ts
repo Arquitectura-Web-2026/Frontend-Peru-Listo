@@ -109,16 +109,19 @@ describe('MetaAhorroService', () => {
   });
 
   describe('aportarMeta', () => {
-    it('should call PUT /API/aportar_meta/{id} with amount', () => {
+    it('should call PUT /API/aportar_meta/{id}?monto=X with query param', () => {
       service.getMetas(1);
       const listReq = httpMock.expectOne(r => r.url === '/API/listar_metas');
       listReq.flush([...mockMetas]);
 
       service.aportarMeta(1, 5000).subscribe();
 
-      const req = httpMock.expectOne('/API/aportar_meta/1');
+      const req = httpMock.expectOne(r =>
+        r.url === '/API/aportar_meta/1' &&
+        r.params.get('monto') === '5000'
+      );
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ monto: 5000 });
+      expect(req.request.body).toBeNull();
 
       const updated = { ...mockMetas[0], montoActual: 20000 };
       req.flush(updated);

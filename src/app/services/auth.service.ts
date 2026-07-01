@@ -12,6 +12,7 @@ export class AuthService {
   private readonly tokenKey = 'token';
   private readonly userIdKey = 'userId';
   private readonly correoKey = 'correo';
+  private readonly roleKey = 'role';
 
   /** Signals for reactive auth state — read by guard + interceptor + components */
   readonly isAuthenticated = signal<boolean>(!!localStorage.getItem(this.tokenKey));
@@ -19,6 +20,7 @@ export class AuthService {
     localStorage.getItem(this.userIdKey) ? Number(localStorage.getItem(this.userIdKey)) : null
   );
   readonly currentUserEmail = signal<string | null>(localStorage.getItem(this.correoKey));
+  readonly currentUserRole = signal<string | null>(localStorage.getItem(this.roleKey));
 
   constructor(private http: HttpClient) {}
 
@@ -45,9 +47,11 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userIdKey);
     localStorage.removeItem(this.correoKey);
+    localStorage.removeItem(this.roleKey);
     this.isAuthenticated.set(false);
     this.currentUserId.set(null);
     this.currentUserEmail.set(null);
+    this.currentUserRole.set(null);
   }
 
   /** Read-only accessors for the interceptor and guard. */
@@ -64,13 +68,21 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  /** Check if current user has admin role. */
+  isAdmin(): boolean {
+    const role = this.currentUserRole();
+    return role === 'ROLE_ADMIN' || role === 'ADMIN';
+  }
+
   /** Persist JWT + user info to localStorage and update signals. */
   private persistSession(response: JwtResponse): void {
     localStorage.setItem(this.tokenKey, response.token);
     localStorage.setItem(this.userIdKey, String(response.id));
     localStorage.setItem(this.correoKey, response.correo);
+    localStorage.setItem(this.roleKey, response.role);
     this.isAuthenticated.set(true);
     this.currentUserId.set(Number(response.id));
     this.currentUserEmail.set(response.correo);
+    this.currentUserRole.set(response.role);
   }
 }
